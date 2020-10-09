@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>BuildMachineOSBuild</key>
+	<string>19D76</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>CloneKitService</string>
+	<key>CFBundleExecutable</key>
+	<string>CloneKitService</string>
+	<key>CFBundleGetInfoString</key>
+	<string>CloneKitService version 5.1.16, Copyright 2002-2020 Bombich Software, Inc.</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.bombich.clonekitservice</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>CloneKitService</string>
+	<key>CFBundlePackageType</key>
+	<string>XPC!</string>
+	<key>CFBundleShortVersionString</key>
+	<string>5.1.16</string>
+	<key>CFBundleSupportedPlatforms</key>
+	<array>
+		<string>MacOSX</string>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>5965</string>
+	<key>DTCompiler</key>
+	<string>com.apple.compilers.llvm.clang.1_0</string>
+	<key>DTPlatformBuild</key>
+	<string>11C504</string>
+	<key>DTPlatformVersion</key>
+	<string>GM</string>
+	<key>DTSDKBuild</key>
+	<string>19B90</string>
+	<key>DTSDKName</key>
+	<string>macosx10.15</string>
+	<key>DTXcode</key>
+	<string>1130</string>
+	<key>DTXcodeBuild</key>
+	<string>11C504</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.10</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2017 Bombich. All rights reserved.</string>
+	<key>PrivilegedHelperToolVersion</key>
+	<integer>861</integer>
+	<key>XPCService</key>
+	<dict>
+		<key>ServiceType</key>
+		<string>Application</string>
+		<key>_MultipleInstances</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

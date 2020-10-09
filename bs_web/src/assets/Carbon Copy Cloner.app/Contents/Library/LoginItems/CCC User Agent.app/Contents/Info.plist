@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>BuildMachineOSBuild</key>
+	<string>19D76</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleExecutable</key>
+	<string>CCC User Agent</string>
+	<key>CFBundleGetInfoString</key>
+	<string>CCC User Agent version 5.1.16, Copyright 2002-2020 Bombich Software, Inc.</string>
+	<key>CFBundleIconFile</key>
+	<string>icon</string>
+	<key>CFBundleIconName</key>
+	<string>icon</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.bombich.cccuseragent</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>5.1.16</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleSupportedPlatforms</key>
+	<array>
+		<string>MacOSX</string>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>5965</string>
+	<key>DTCompiler</key>
+	<string>com.apple.compilers.llvm.clang.1_0</string>
+	<key>DTPlatformBuild</key>
+	<string>11C504</string>
+	<key>DTPlatformVersion</key>
+	<string>GM</string>
+	<key>DTSDKBuild</key>
+	<string>19B90</string>
+	<key>DTSDKName</key>
+	<string>macosx10.15</string>
+	<key>DTXcode</key>
+	<string>1130</string>
+	<key>DTXcodeBuild</key>
+	<string>11C504</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.10</string>
+	<key>LSUIElement</key>
+	<string>1</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2002-2020 Bombich Software, Inc.</string>
+	<key>NSMainNibFile</key>
+	<string>UserAgent</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>PrivilegedHelperToolVersion</key>
+	<integer>861</integer>
+	<key>SMAuthorizedClients</key>
+	<array>
+		<string>certificate root = H"611e5b662c593a08ff58d14ae22452d198df6c60" and certificate leaf[subject.O] = "Bombich Software"* and identifier "com.bombich.ccc"</string>
+	</array>
+</dict>
+</plist>

@@ -1,0 +1,122 @@
+<div>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">租赁自行车调度平台</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">需求量确定<span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown01" role="button"
+                       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        调度路线生成
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <a class="dropdown-item" href="/grounding">求解调度方案</a>
+                        <a class="dropdown-item" href="#">查看调度路线图</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#">Something else here</a>
+                    </div>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown02" role="button"
+                       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        算法对比
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <a class="dropdown-item" href="#">传统遗传算法</a>
+                        <a class="dropdown-item" href="#">免疫遗传算法</a>
+                        <a class="dropdown-item" href="#">人工蜂群算法</a>
+                        <a class="dropdown-item" href="#">NSGA-II</a>
+                        <a class="dropdown-item" href="#">MOEA/D</a>
+                    </div>
+                </li>
+            </ul>
+            <form class="form-inline my-2 my-lg-0">
+                <input class="form-control mr-sm-2" type="search" placeholder="Find here..." aria-label="Search">
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+            </form>
+        </div>
+    </nav>
+</div>
+
+
+<div *ngIf="!clustered" style="padding-top: 50px">
+    <div class="row col-10" style="padding-left: 100px">
+        <div class="col-3" style="padding-left: 100px">
+            <button type="button" class="btn btn-beautify" style="background-color:#005cbf; padding-right: 20px"
+                    (click)="getCurrentStationInfo()">查看当前站点信息
+            </button>
+        </div>
+        <div class="col-3"  style="padding-left: 100px">
+            <div class="dropdown" *ngIf="toggled">
+                <button class="btn btn-beautify btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                        style="color: snow; background-color:#005cbf"
+                >
+                    调度子区划分
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <a class="dropdown-item" (click)="clustering('Louvain')">Louvain</a>
+                    <a class="dropdown-item" (click)="clustering('Infomap')">Infomap</a>
+                    <a class="dropdown-item" href="/cluster_cmp" disabled="true">对比</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div *ngIf="clustered" class="row mt-4">
+    <div class="col-6" style="padding-left: 100px">
+        <app-cluster-selection *ngIf="clustered" style="padding-right: 20px"></app-cluster-selection>
+        <button type="button" class="btn btn-beautify" style="background-color:#005cbf;"
+                (click)="filter_cluster()">确定
+        </button>
+    </div>
+
+    <div class="col-3" style="padding-left: 100px">
+        <button type="button" class="btn btn-beautify" style="background-color:#005cbf; padding-right: 20px"
+                (click)="getPriority()">查看站点重要度
+        </button>
+    </div>
+
+    <div class="col-3" *ngIf="checkPriority">
+        <button type="button" class="btn btn-beautify" style="background-color:#005cbf; padding-right: 20px"
+                (click)="sortByPriority()">按重要度排序
+        </button>
+    </div>
+</div>
+
+<div *ngIf="toggled" class="col-10 mt-4" style="padding-left: 80px">
+    <nz-table #basicTable [nzData]="displaySet">
+        <thead>
+        <tr>
+            <th>站点编号</th>
+            <th>所属调度子区</th>
+            <th>当前车辆与最大容量比</th>
+            <th>借还速率差</th>
+            <th>期望调度时间</th>
+            <th>调度需求量</th>
+            <th>站点重要度</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let data of displaySet">
+            <td>{{data.station_id}}</td>
+            <td>{{data.cluster}}</td>
+            <td>{{data.ratio}}</td>
+            <td>{{data.velocity}}</td>
+            <td>{{data.full_empty_time}}</td>
+            <td>{{data.demand}}</td>
+            <td>{{data.priority}}</td>
+        </tr>
+        </tbody>
+    </nz-table>
+</div>

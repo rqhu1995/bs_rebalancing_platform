@@ -1,0 +1,111 @@
+#!/bin/sh
+PATH=/bin:/usr/bin:/sbin:/usr/sbin export PATH
+
+# Authentication Credentials Installer shell script.  
+# Copyright 2002-2016, Bombich Software, Inc.
+
+bail() {
+	rm "$1"
+	exit $2
+}
+
+print_result() {
+	if [ $? == 0 ]; then
+		printf "Succeeded\n"
+	else
+		printf "Failed\n"
+	fi
+}
+
+u_pubkey="%UPUBKEY%"
+r_pubkey="%RPUBKEY%"
+deauth="%DEAUTH%"
+
+me=`whoami`
+if [ "$me" != "root" ]; then
+	sudo -S "$0"
+	ex=$?
+	if [ $ex != 0 ]; then
+		sleep 1
+	fi
+	exit $ex
+fi
+
+root_ssh=/var/root/.ssh
+if [ "$deauth" = "YES" ]; then
+	t_auth=$root_ssh/authorized_keys
+
+	printf "REMOVING_AUTHS_FOR_HOST $u_pubkey "
+	perl -n -i -e "print unless /$u_pubkey/" "$t_auth"
+	status=$?
+	print_result
+	exit $status
+fi
+
+isMember=`dsmemberutil checkmembership -U root -G com.apple.access_ssh`
+if [ "$?" != "0" ]; then 
+	echo "NO_SACL"
+elif [ "$isMember" = "user is a member of the group" ]; then 
+	echo "ROOT_IS_SACL_MEMBER"
+else 
+	echo "ROOT_IS_NOT_SACL_MEMBER"
+	bail "$0" 1
+fi
+	
+aa=`dscl . read /Users/root AuthenticationAuthority | grep "DisabledUser" | wc -l | cut -c 8`
+if [ "$aa" = "1" ]; then
+	echo "INVALID_AUTHENTICATION_AUTHORITY"
+	bail "$0" 2
+fi
+
+# Print out sshd customizations for debugging purposes
+sshd="/etc/sshd_config"
+if [ ! -f "$sshd" ]; then
+	sshd="/etc/ssh/sshd_config"
+fi
+
+awk '!/^#/ {if ($0 != "") print "DEBUG: "$0}' "$sshd"
+
+# Specifically call out "PermitRootLogin no"
+root_allowed=`awk '/^PermitRootLogin no/ {if ($0 != "") print "1"}' "$sshd"`
+if [ "$root_allowed" = "1" ]; then
+	echo "ROOT_LOGIN_DISABLED_SSHD_CONFIG"
+	bail "$0" 3
+fi
+
+# Specifically call out "PubkeyAuthentication no"
+pka_allowed=`awk '/^PubkeyAuthentication no/ {if ($0 != "") print "1"}' "$sshd"`
+if [ "$pka_allowed" = "1" ]; then
+	echo "PKA_LOGIN_DISABLED_SSHD_CONFIG"
+	bail "$0" 3
+fi
+
+if [ ! -d $root_ssh ]; then
+	printf "CREATING_ROOT_SSH_DIR "
+	mkdir $root_ssh
+	print_result
+fi
+
+printf "INSTALLING RSYNC WRAPPER "
+parent=`dirname "$0"`
+cp "$parent/rsync-wrapper.sh" /var/root/.ssh/rsync-wrapper.sh
+print_result
+
+t_auth=$root_ssh/authorized_keys
+new_host=`echo "$u_pubkey" | awk '{print $NF}'`
+
+printf "REMOVING_AUTHS_FOR_HOST $new_host "
+perl -n -i -e "print unless /$new_host/" "$t_auth"
+print_result
+
+printf "INSTALLING_PUBKEY "
+printf "$u_pubkey\n" >> "$t_auth"
+printf "command=\"/var/root/.ssh/rsync-wrapper.sh\" $r_pubkey\n" >> "$t_auth"
+print_result
+
+
+printf "ADJUSTING_PRIVILEGES "
+chown -R root:wheel /private/var/root && chown -R root:wheel "$root_ssh" && chmod 500 "$root_ssh" && chmod 644 "$t_auth"
+print_result
+
+bail "$0" 0

@@ -1,0 +1,36 @@
+
+/* Class = "NSButtonCell"; title = "Skip This Version"; ObjectID = "94g-CM-kWZ"; */
+"94g-CM-kWZ.title" = "Skip This Version";
+
+/* Class = "NSButtonCell"; title = "No Thanks"; ObjectID = "Ao0-Rr-rAA"; */
+"Ao0-Rr-rAA.title" = "No Thanks";
+
+/* Class = "NSButtonCell"; title = "Remind Me Later"; ObjectID = "Ewn-sc-8q3"; */
+"Ewn-sc-8q3.title" = "Remind Me Later";
+
+/* Class = "NSTextFieldCell"; title = "Release Notes:"; ObjectID = "NNb-go-qPs"; */
+"NNb-go-qPs.title" = "Release Notes:";
+
+/* Class = "NSWindow"; title = "Upgrade Available"; ObjectID = "SLq-yE-ADe"; */
+"SLq-yE-ADe.title" = "Upgrade Available";
+
+/* Class = "NSBox"; title = "Box"; ObjectID = "UO1-l0-ioa"; */
+"UO1-l0-ioa.title" = "Box";
+
+/* Class = "NSButtonCell"; title = "Download Trial"; ObjectID = "gm1-yc-LSw"; */
+"gm1-yc-LSw.title" = "Download Trial";
+
+/* Class = "NSButtonCell"; title = "Install Update"; ObjectID = "jfk-B1-6MX"; */
+"jfk-B1-6MX.title" = "Install Update";
+
+/* Class = "NSWindow"; title = "Software Update"; ObjectID = "mtK-Sp-iKP"; */
+"mtK-Sp-iKP.title" = "Software Update";
+
+/* Class = "NSTextFieldCell"; title = "<DNL: Description>"; ObjectID = "peU-wt-4wm"; */
+"peU-wt-4wm.title" = "<DNL: Description>";
+
+/* Class = "NSButtonCell"; title = "Remind Me Later"; ObjectID = "sin-aA-Bi5"; */
+"sin-aA-Bi5.title" = "Remind Me Later";
+
+/* Class = "NSTextFieldCell"; title = "<DNL: Title>"; ObjectID = "yiv-6N-3OQ"; */
+"yiv-6N-3OQ.title" = "<DNL: Title>";

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+$(sleep 1; /bin/rm /Library/LaunchDaemons/com.bombich.ccchelper.plist /Library/PrivilegedHelperTools/com.bombich.ccchelper; /bin/launchctl remove com.bombich.ccchelper) &
+/bin/rm -rf /Library/Application\ Support/com.bombich.ccc
