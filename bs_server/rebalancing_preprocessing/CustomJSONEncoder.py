@@ -12,12 +12,12 @@
 import numpy as np
 from flask.json import JSONEncoder
 
-from bs_server.rebalancing_preprocessing.station_info import StationInfo
+from bs_server.rebalancing_preprocessing.station_info import Station
 
 
 class CustomJSONEncoder(JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, StationInfo):
+        if isinstance(obj, Station):
             return obj.__dict__
         elif isinstance(obj, (np.int_, np.intc, np.intp, np.int8,
                               np.int16, np.int32, np.int64, np.uint8,

@@ -94,28 +94,36 @@
     </div>
 </div>
 
-<div *ngIf="toggled" class="col-10 mt-4" style="padding-left: 80px">
+<div *ngIf="toggled" class="col-12 mt-4" style="padding-left: 80px">
     <nz-table #basicTable [nzData]="displaySet">
         <thead>
         <tr>
             <th>站点编号</th>
             <th>所属调度子区</th>
+            <th>当前车辆数</th>
+            <th>站点最大容量</th>
             <th>当前车辆与最大容量比</th>
             <th>借还速率差</th>
             <th>期望调度时间</th>
+<!--            <th>2-8预警时间</th>-->
             <th>调度需求量</th>
             <th>站点重要度</th>
+            <th>是否已调度</th>
         </tr>
         </thead>
         <tbody>
         <tr *ngFor="let data of displaySet">
-            <td>{{data.station_id}}</td>
-            <td>{{data.cluster}}</td>
+            <td>{{data.id}}</td>
+            <td> {{data.cluster}}</td>
+            <td>{{data.bike_count}}</td>
+            <td>{{data.max_capacity}}</td>
             <td>{{data.ratio}}</td>
             <td>{{data.velocity}}</td>
             <td>{{data.full_empty_time}}</td>
             <td>{{data.demand}}</td>
             <td>{{data.priority}}</td>
+            <td>{{data.visited}}</td>
+
         </tr>
         </tbody>
     </nz-table>

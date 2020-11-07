@@ -10,19 +10,21 @@
 * Cooperating with Dr. Matt in 2020
 """
 
+import numpy as np
 from geopy.distance import geodesic
+from shapely.geometry import Polygon
 
-from bs_server.data import *
+from bs_server.data_dockless import *
 
 
-def calculate_rent_return_velocity(past_rent,
-                                   past_return,
-                                   pred_rent,
-                                   pred_return,
+def calculate_rent_return_velocity(station,
+                                   stage,
                                    delta=15,
                                    tau=60,
                                    lambda_weight=0.5):
     """
+    :param stage: 当前滚动时段
+    :param station: 站点对象
     :param past_rent: 历史借车值
     :param past_return: 历史还车值
     :param pred_rent: 预测借车值
@@ -33,11 +35,16 @@ def calculate_rent_return_velocity(past_rent,
     :return:
     """
 
+    past_rent_list = [station.past_rent_01, station.past_rent_02, station.past_rent_03, station.past_rent_04]
+    past_return_list = [station.past_return_01, station.past_return_02, station.past_return_03, station.past_return_04]
+    pred_rent_list = [station.pred_rent_01, station.pred_rent_02, station.pred_rent_03, station.pred_rent_04]
+    pred_return_list = [station.pred_return_01, station.pred_return_02, station.pred_return_03, station.pred_return_04]
+
     # 前\delta分钟，后\tau分钟
-    rent_return_past_velocity = (past_rent - past_return) / delta
-    rent_return_pred_velocity = (pred_rent - pred_return) / tau
+    rent_return_past_velocity = (past_rent_list[stage] - past_return_list[stage]) / delta
+    rent_return_pred_velocity = (pred_rent_list[stage] - pred_return_list[stage]) / tau
     velocity = rent_return_past_velocity * lambda_weight + rent_return_pred_velocity * (1 - lambda_weight)
-    return velocity
+    station.velocity = round(velocity, 2)
 
 
 def calculate_warning_time(station, rent_return_velocity, remaining_time):
@@ -45,20 +52,23 @@ def calculate_warning_time(station, rent_return_velocity, remaining_time):
     计算站点预警时间（2-8的时间）
     :return:
     """
+    # remaining_time = initial_bike
     # 如果已经超出28，直接为0
-    if initial_bike[station.station_id] >= 0.8 * max_capacity[station.station_id] or \
-            initial_bike[station.station_id] <= 0.2 * max_capacity[station.station_id]:
+    if (station.bike_count >= 0.8 * station.max_capacity and not (
+            0.2 * station.max_capacity <= station.bike_count - rent_return_velocity * remaining_time <= 0.8 * station.max_capacity)) or (
+            station.bike_count <= 0.2 * station.max_capacity and not (
+            0.2 * station.max_capacity <= station.bike_count - rent_return_velocity * remaining_time <= 0.8 * station.max_capacity)):
         station.warning_time = 0
+
     # 否则时间是28的差值/当前速度
-    elif initial_bike[station.station_id] > 0.2 * max_capacity[station.station_id] and rent_return_velocity[
-        station.station_id] > 0:
-        station.warning_time = round(min((initial_bike[station.station_id] - 0.2 * max_capacity[station.station_id]) / \
-                                         rent_return_velocity[station.station_id], remaining_time), 2)
-    elif initial_bike[station.station_id] < 0.8 * max_capacity[station.station_id] and rent_return_velocity[
-        station.station_id] < 0:
-        station.warning_time = round(min((initial_bike[station.station_id] - 0.8 * max_capacity[station.station_id]) / \
-                                         rent_return_velocity[station.station_id], remaining_time), 2)
-    elif rent_return_velocity[station.station_id] == 0:
+    elif station.bike_count > 0.2 * station.max_capacity and rent_return_velocity > 0:
+        station.warning_time = round(min((station.bike_count - 0.2 * station.max_capacity) / \
+                                         rent_return_velocity, remaining_time), 2)
+    elif station.bike_count < 0.8 * station.max_capacity and rent_return_velocity < 0:
+        station.warning_time = round(min((station.bike_count - 0.8 * station.max_capacity) / \
+                                         rent_return_velocity, remaining_time), 2)
+
+    elif rent_return_velocity == 0:
         station.warning_time = remaining_time
 
 
@@ -69,39 +79,30 @@ def calculate_full_empty_time(station, rent_return_velocity, remaining_time):
     :param remaining_time:
     :return:
     """
-    # 如果已经空满，直接为0
-    if initial_bike[station.station_id] >= max_capacity[station.station_id] or \
-            initial_bike[station.station_id] <= 0:
-        station.full_empty_time = 0
-    # 否则时间是和空满的差值/当前速度
-    elif initial_bike[station.station_id] > 0 and rent_return_velocity[station.station_id] > 0:
+    if rent_return_velocity > 0:
+        station.full_empty_time = round(min(remaining_time, station.bike_count / rent_return_velocity), 2)
+    elif rent_return_velocity < 0:
         station.full_empty_time = round(
-            min((initial_bike[station.station_id]) / rent_return_velocity[station.station_id],
-                remaining_time), 2)
-    elif initial_bike[station.station_id] < max_capacity[station.station_id] and rent_return_velocity[
-        station.station_id] < 0:
-        station.full_empty_time = round(min(
-            (initial_bike[station.station_id] - max_capacity[station.station_id]) / rent_return_velocity[
-                station.station_id],
-            remaining_time), 2)
-    elif rent_return_velocity[station.station_id] == 0:
-        station.full_empty_time = remaining_time
+            min(remaining_time,
+                (station.max_capacity - min(station.bike_count, station.max_capacity)) / (-rent_return_velocity)), 2)
+    else:
+        if station.bike_count == 0 or station.bike_count >= station.max_capacity:
+            station.full_empty_time = 0
+        else:
+            station.full_empty_time = remaining_time
 
 
 def calculate_demand(station, remaining_time, rent_return_velocity):
-    if station.warning_time >= remaining_time:
+    remaining_bike = station.bike_count - rent_return_velocity * remaining_time
+    if (remaining_bike <= 0) or (0 < remaining_bike < 0.2 * station.max_capacity < station.bike_count):
+        station.demand = 0.2 * station.max_capacity - remaining_bike
+    elif (remaining_bike > station.max_capacity) or \
+            (0 < station.bike_count < 0.8 * station.max_capacity < remaining_bike < station.max_capacity) or \
+            (0.8 * station.max_capacity < remaining_bike < station.max_capacity < station.bike_count):
+        station.demand = -(remaining_bike - 0.8 * station.max_capacity)
+    else:
         station.demand = 0
-    elif rent_return_velocity[station.station_id] > 0:
-        station.demand = rent_return_velocity[station.station_id] * remaining_time - \
-                         initial_bike[station.station_id] + 0.2 * max_capacity[station.station_id]
-    elif rent_return_velocity[station.station_id] < 0:
-        station.demand = rent_return_velocity[station.station_id] * remaining_time - \
-                         initial_bike[station.station_id] + 0.8 * max_capacity[station.station_id]
-    elif rent_return_velocity[station.station_id] == 0:
-        if initial_bike[station.station_id] > 0.8 * max_capacity[station.station_id]:
-            station.demand = 0.8 * max_capacity[station.station_id] - initial_bike[station.station_id]
-        elif initial_bike[station.station_id] < 0.2 * max_capacity[station.station_id]:
-            station.demand = 0.2 * max_capacity[station.station_id] - initial_bike[station.station_id]
+
     if station.demand > 0:
         station.demand = np.ceil(station.demand).astype(int)
     else:
@@ -109,18 +110,13 @@ def calculate_demand(station, remaining_time, rent_return_velocity):
 
 
 def calculate_distance(station_data, selected_cluster):
-    center = [
-        (118.7931074, 32.04722081),
-        (118.7860483, 32.02286646),
-        (118.7721501, 32.06339912),
-        (118.7752358, 32.04127961)
-    ]
-    for station_info in station_data:
-        print((lat_lon[station_info['station_id']][1],
-                        lat_lon[station_info['station_id']][0]),
-                       (center[selected_cluster - 1][1],
-                        center[selected_cluster - 1][0]))
-        station_info['distance'] = round(geodesic((lat_lon[station_info['station_id']][1],
-                                                 lat_lon[station_info['station_id']][0]),
-                                                (center[selected_cluster - 1][1],
-                                                 center[selected_cluster - 1][0])).km, 2)
+    cord_list = []
+    for station in station_data:
+        cord_list.append([lat_lon[station['id']][1],
+                          lat_lon[station['id']][0]])
+    polygon = Polygon(cord_list)
+    center = polygon.centroid.coords[0]
+    for station in station_data:
+        station['distance'] = round(geodesic((lat_lon[station['id']][1],
+                                              lat_lon[station['id']][0]),
+                                             center).km, 2)

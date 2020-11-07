@@ -33,7 +33,15 @@ export class NewComponent implements OnInit {
                         const tmpObj = {station_id: key};
                         Object.entries(value).forEach(
                             ([k, v]) => {
-                                tmpObj[k] = v;
+                                if (k == 'cluster' && v == -1){
+                                    tmpObj[k] = '不参与调度';
+                                } else {
+                                    if (k == 'cluster') {
+                                        tmpObj[k] = v + 1;
+                                    } else {
+                                        tmpObj[k] = v;
+                                    }
+                                }
                             }
                         );
                         this.displaySet.push(tmpObj);
@@ -46,9 +54,30 @@ export class NewComponent implements OnInit {
 
     clustering(clusterMethod: string) {
         this.clustered = true;
-        this.stationInfo.getCluster(this.displaySet).subscribe(res => {
-            this.displaySet = res;
-        });
+        this.displaySet = [];
+        this.stationInfo.getStationInfo().subscribe(res => {
+                Object.entries(res).forEach(
+                    ([key, value]) => {
+                        const tmpObj = {station_id: key};
+                        Object.entries(value).forEach(
+                            ([k, v]) => {
+                                if (k == 'cluster' && v == -1){
+                                    tmpObj[k] = '不参与调度';
+                                } else {
+                                    if (k == 'cluster') {
+                                        tmpObj[k] = v + 1;
+                                    } else {
+                                        tmpObj[k] = v;
+                                    }
+                                }
+                            }
+                        );
+                        this.displaySet.push(tmpObj);
+                        console.log(tmpObj);
+                    }
+                );
+            }
+        );
     }
 
     filter_cluster() {
