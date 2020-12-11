@@ -9,25 +9,29 @@
 
 * Cooperating with Dr. Matt in 2020
 """
-import time
+import copy
 from itertools import groupby
 
 import numpy as np
 from pymoo.model.repair import Repair
 
-from confreader import read_config as cfg
-from data import station_info
-from result_evaluation.evaluate import evaluate
+from bs_server.confreader import read_config as cfg
+from bs_server.data import station_list, station_info
+from bs_server.result_evaluation.evaluate import evaluate
 
 station_count = int(cfg('station_info', 'station_count'))
 truck_count = int(cfg('station_info', 'truck_count'))
 consider_priority = bool(cfg('meta_info', 'priority_considered'))
 
 
+# session = Session()
+
+
 def get_index_by_priority(num):
-    for item in station_info.keys():
-        if station_info[item]['priority'] == num:
-            return list(station_info.keys()).index(item)
+    for item in station_info:
+        if item['priority'] == num:
+            return station_list.index(item['id'])
+    return None
 
 
 def fix_priority_dist(routes):
@@ -35,19 +39,18 @@ def fix_priority_dist(routes):
     priority = []
     for idx, route in enumerate(routes):
         pri = []
-        station_list = list(station_info.keys())
         for station in route:
-            pri.append(station_info[station_list[station]]['priority'])
+            pri.append(station_info[station]['priority'])
         priority_rng.append(np.max(pri) - np.min(pri))
         priority.append(pri)
     rng = sorted(priority_rng, reverse=False)
     idx1, idx2 = priority_rng.index(rng[0]), priority_rng.index(rng[1])
     tmp = sorted(priority[idx1] + priority[idx2], reverse=True)
-    max_1, max_2, min_1, min_2 = tmp[0],\
-                                 tmp[1],\
-                                 tmp[len(tmp)-2],\
-                                 tmp[len(tmp)-1]
-    if len({max_1, max_2, min_1, min_2})!=4 :
+    max_1, max_2, min_1, min_2 = tmp[0], \
+                                 tmp[1], \
+                                 tmp[len(tmp) - 2], \
+                                 tmp[len(tmp) - 1]
+    if len({max_1, max_2, min_1, min_2}) != 4:
         return routes
     pri_idx = []
     # print([max_1, max_2, min_1, min_2])
@@ -68,32 +71,45 @@ def fix_priority_dist(routes):
     routes[idx2].append(pri_idx[3])
     return routes
 
+
 class RouteDistributionRepair(Repair):
-    def __init__(self, ref_dir):
-        self.ref_dir = ref_dir
 
     def _do(self, problem, pop, **kwargs):
-        # sub_idx = kwargs['subproblem_index']
         # the routing information population (each row one individual)
         population = pop.get("X")
-        # print(population.shape)
         # the packing plan for i
-        z = population
-        # zres = []
-        # for zidx, z in enumerate(zp):
-        # find all the trucks in the population, insert them as averagely as possible
-        stations = z[z < station_count]
-        split = np.array_split(stations, truck_count)
-        result = []
-        for idx, chunk in enumerate(split):
-            if idx != len(split) - 1:
-                chunk = np.append(chunk, station_count + idx)
-            result = result + list(chunk)
-        z = np.asarray(result)
-        z = np.asarray(self.priority_repair(z))
-
-        # set the design variables for the population
-        pop.set("X", z)
+        if population.shape[0] == 100:
+            for row in range(population.shape[0]):
+                z = population[row]
+                # find all the trucks in the population, insert them as averagely as possible
+                stations = z[z < station_count]
+                # print(stations)
+                split = np.array_split(stations, truck_count)
+                result = []
+                for idx, chunk in enumerate(split):
+                    if idx != len(split) - 1:
+                        chunk = np.append(chunk, station_count + idx)
+                    result = result + list(chunk)
+                z = np.asarray(result)
+                if cfg('meta_info', 'priority_considered') == "True":
+                    z = np.asarray(self.priority_repair(z))
+                population[row] = z
+        else:
+            z = population
+            stations = z[z < station_count]
+            # print(stations)
+            split = np.array_split(stations, truck_count)
+            result = []
+            for idx, chunk in enumerate(split):
+                if idx != len(split) - 1:
+                    chunk = np.append(chunk, station_count + idx)
+                result = result + list(chunk)
+            z = np.asarray(result)
+            if cfg('meta_info', 'priority_considered') == "True":
+                z = np.asarray(self.priority_repair(z))
+            population = z
+            # set the design variables for the population
+        pop.set("X", population)
         return pop
 
     def priority_repair(self, solution):
@@ -103,18 +119,14 @@ class RouteDistributionRepair(Repair):
             counter += 1
             routes = [list(group) for k, group in groupby(solution, lambda y: y >= station_count) if not k]
             new_solution = []
-            routes = fix_priority_dist(routes)
+            # routes = fix_priority_dist(routes)
             for idx, route in enumerate(routes):
-                tmp = route.copy()
-                selected = self.roulette_wheel(route)
-                # print(route)
+                tmp = copy.deepcopy(route)
+                selected = self.roulette_wheel(tmp)
                 selected = selected['origin_index']
-                # print(list(station_info.keys())[selected])
                 tmp.remove(selected)
                 new_sol = [selected] + list(tmp)
                 new_solution += list(new_sol) + [station_count + idx]
-                # print("origin:" + str(route))
-                # print("new:   " + str(new_sol))
         if new_solution is None or self.is_dominated_by(new_solution[:-1], solution):
             return solution
         else:
@@ -123,17 +135,18 @@ class RouteDistributionRepair(Repair):
     @staticmethod
     def roulette_wheel(solution):
         population = []
-        station_list = list(station_info.keys())
         for station in solution:
+            station_obj = station_info[station_list.index(station_list[station])]
             population.append({
                 'origin_index': station,
-                'station_id': station_list[station],
-                'priority': station_info[station_list[station]]['priority']
+                'station_id': station_obj['id'],
+                'priority': station_obj['priority']
             })
+
         maximum = sum([c['priority'] for c in population])
         selection_probs = [c['priority'] / maximum for c in population]
+        # t = time.time()
         k = population[np.random.choice(len(population), p=selection_probs)]
-        # print(k['station_id'])
         return k
 
     @staticmethod
@@ -143,9 +156,9 @@ class RouteDistributionRepair(Repair):
         new_sol_map = []
         old_sol_map = []
         for station in new_sol:
-            new_sol_map.append(list(station_info.keys())[station] if station < station_count else -1)
+            new_sol_map.append(station_list[station] if station < station_count else -1)
         for station in solution:
-            old_sol_map.append(list(station_info.keys())[station] if station < station_count else -1)
+            old_sol_map.append(station_list[station] if station < station_count else -1)
         eval_new = evaluate(new_sol_map)
         eval_old = evaluate(old_sol_map)
         return eval_new[0] >= eval_old[0] or eval_new[2] <= eval_old[2]

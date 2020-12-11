@@ -13,15 +13,14 @@
 
 from itertools import groupby
 
+import numpy as np
 from geopy.distance import geodesic
 from more_itertools import pairwise
 from pymoo.model.problem import Problem
 
-from confreader import read_config as cfg
-from data import *
-
-station_count = int(cfg('station_info', 'station_count'))
-truck_count = int(cfg('station_info', 'truck_count'))
+from bs_server.data import *
+from bs_server.rebalancing_preprocessing.main import current_stage
+from dist_matrix import get_distance
 
 
 class BSRebalancing(Problem):
@@ -37,10 +36,8 @@ class BSRebalancing(Problem):
 
     # 输入：随机生成的0-N排列
     def _evaluate(self, x, out, *args, **kwargs):
-        # if len(x.shape) < 2:
-        #     x = x.reshape((1, -1))
-        # 站点按照重要度排序的下标列表
-        station_list = list(station_info.keys())[4:]
+        # print(x)
+        # session = Session()
         result = None
         # 将站点下标映射到站点编号/卡车分割
         single_route = x.copy()
@@ -54,35 +51,45 @@ class BSRebalancing(Problem):
             routes = [list(group) for k, group in groupby(real_route, lambda y: y == -1) if not k]
             sat_profit = 0
             running_cost = 0
+            key = [15037, 11028]
+            truck_inventory_list = [30, 31]
+            centroid = (32.03803975535169, 118.7987139091005)
             for idx, route in enumerate(routes):
                 # 当前时间
-                route.insert(0, list(station_info.keys())[idx])
+                # route.insert(0, list(station_info.keys())[idx])
+                if current_stage != 0:
+                    centroid_station = (key_info[key[idx]])
+                    centroid = (centroid_station['latitude'], centroid_station['longitude'])
+                else:
+                    centroid = centroid
                 current_time = 0
                 # 车场抵达第一站
-                center_to_first = geodesic((lat_lon[route[0]][1], lat_lon[route[0]][0]), center).km / truck_velocity
+                first_stop = station_info[station_list.index(route[0])]
+                center_to_first = geodesic((first_stop['latitude'], first_stop['longitude']),
+                                           centroid).m / truck_velocity
                 current_time += center_to_first
                 running_cost += center_to_first * travel_cost
-                truck_inventory = 60
+                truck_inventory = truck_inventory_list[idx]
                 for station, next_station in pairwise(route + [route[0]]):
-                    func_2 = self.derivation_from_target_penalty_calculation(station, truck_inventory)
-                    sat_profit -= 1 * self.satisfaction_calculation(station, current_time, func_2[2])
+                    station_obj = station_info[station_list.index(station)]
+                    func_2 = self.derivation_from_target_penalty_calculation(station_obj, current_time, truck_inventory)
+                    sat_profit -= 1 * self.satisfaction_calculation(station_obj, current_time, func_2[2])
                     truck_inventory = func_2[1]
-                    travel_time_to_next = distance_matrix[station, next_station] / truck_velocity
+                    travel_time_to_next = get_distance(station, next_station) / truck_velocity
                     working_time = func_2[2] * 1 / 6
                     running_cost += travel_time_to_next * travel_cost + working_time * working_cost
-                    current_time += distance_matrix[station, next_station] / truck_velocity + working_time
+                    current_time += get_distance(station, next_station) / truck_velocity + working_time
                     if current_time > 15:
                         break
             if result is None:
                 result = np.array([[sat_profit, running_cost]])
             else:
                 result = np.vstack((result, np.array([sat_profit, running_cost])))
-
         out["F"] = result
 
     @staticmethod
     def satisfaction_calculation(station, arriving_time, rebalancing_amount):
-        expected_time = station_info[station]['full_empty_time']
+        expected_time = station['full_empty_time']
         # 晚于最晚到达时间，满意度全部为0
         if arriving_time >= expected_time + reserved_time:
             return 0
@@ -97,7 +104,6 @@ class BSRebalancing(Problem):
         # 在下降之前到达
         if arriving_time <= expected_time:
             # 开始下降前一共能调度的车辆数
-            # print(arriving_time, expected_time)
             valid_amount_01 = (expected_time - arriving_time) / 10 * 60
             total_sat = min(valid_amount_01, rebalancing_amount) * 1
             valid_amount_02 = (expected_time + reserved_time - arriving_time) / 10 * 60
@@ -107,15 +113,16 @@ class BSRebalancing(Problem):
             return total_sat
 
     @staticmethod
-    def derivation_from_target_penalty_calculation(station, truck_inventory):
-        station_demand = station_info[station]['demand']
+    def derivation_from_target_penalty_calculation(station, current_time, truck_inventory):
         rebalancing_amount = 0
-        cmax = station_info[station]['max_capacity']
-        init_inventory = station_info[station]['init_inventory']
-        if station_demand > 0:
-            rebalancing_amount = min(min(truck_inventory, station_demand), cmax - init_inventory)
+        # print(station.demand)
+        station_remaining_bike = min(max(station['bike_count'] - station['velocity'] * current_time, 0),
+                                     station['max_capacity'])
+        if station['demand'] > 0:
+            rebalancing_amount = min(min(truck_inventory, station['demand']),
+                                     station['max_capacity'] - station_remaining_bike)
             truck_inventory -= rebalancing_amount
-        elif station_demand < 0:
-            rebalancing_amount = min(min(-station_demand, truck_capacity - truck_inventory), init_inventory)
+        elif station['demand'] < 0:
+            rebalancing_amount = min(min(-station['demand'], truck_capacity - truck_inventory), station['bike_count'])
             truck_inventory += rebalancing_amount
-        return abs(abs(station_demand) - abs(rebalancing_amount)), truck_inventory, abs(rebalancing_amount)
+        return abs(abs(station['demand']) - abs(rebalancing_amount)), truck_inventory, abs(rebalancing_amount)

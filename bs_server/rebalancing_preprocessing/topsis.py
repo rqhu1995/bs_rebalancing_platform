@@ -18,9 +18,9 @@ import pandas
 
 def indicator_direction_unify(indicator_df):
     # 同向化处理
-    df_cpy = indicator_df[['full_empty_time', 'demand', 'distance']]
+    df_cpy = indicator_df[['full_empty_time', 'demand', 'key_distance']]
     df_cpy.loc[:, 'demand'] = df_cpy.loc[:, 'demand'].map(lambda x: abs(x))
-    df_cpy.loc[:, 'distance'] = df_cpy.loc[:, 'distance'].map(lambda x: float(df_cpy.loc[:, 'distance'].max() - x))
+    df_cpy.loc[:, 'key_distance'] = df_cpy.loc[:, 'key_distance'].map(lambda x: float(df_cpy.loc[:, 'key_distance'].max() - x))
     df_cpy.loc[:, 'full_empty_time'] = df_cpy.loc[:, 'full_empty_time'].map(
         lambda x: float(df_cpy.loc[:, 'full_empty_time'].max() - x))
     df_cpy = pandas.DataFrame(df_cpy.values.T, index=df_cpy.columns, columns=df_cpy.index)
@@ -64,7 +64,6 @@ def calculate_score(answer2):
     max_list = []  # 存放第i个评价对象与最大值的距离
     min_list = []  # 存放第i个评价对象与最小值的距离
     answer_list = []  # 存放评价对象的未归一化得分
-
     for k in range(0, np.size(answer2, axis=1)):  # 遍历每一列数据
         max_sum = 0
         min_sum = 0
@@ -76,10 +75,10 @@ def calculate_score(answer2):
         answer_list.append(min_list[k] / (min_list[k] + max_list[k]))  # 套用计算得分的公式 Si = (Di-) / ((Di+) +(Di-))
         max_sum = 0
         min_sum = 0
-    print(max_list)
-    print(min_list)
+    # print(max_list)
+    # print(min_list)
     answer = np.array(answer_list)  # 得分归一化
-    print(answer)
+    # print(answer)
     return answer_list
 
 
@@ -90,7 +89,8 @@ def priority_calculation(indicator_df):
     answer4 = calculate_score(answer3)  # 标准化处理去钢
     data = pandas.DataFrame(answer4)  # 计算得分
     data['rank'] = data.rank(ascending=False)
-    data['ID'] = indicator_df['station_id']
+    indicator_df.reset_index(drop=True, inplace=True)
+    data['ID'] = indicator_df['id']
     a = data['rank'].rank(ascending=True)
     data['e'] = a.values
     data['e'] = data['e'].map(lambda x: float(10 * math.exp(1 - x / len(data["rank"]))))  # 提计算参数,一

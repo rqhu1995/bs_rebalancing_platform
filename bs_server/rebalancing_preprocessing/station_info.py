@@ -12,8 +12,8 @@
 
 from dataclasses import dataclass
 
-from sqlalchemy import Column, Integer, Float, Boolean, MetaData
-from sqlalchemy.orm import registry
+from sqlalchemy import Column, Integer, Float, Boolean, MetaData, create_engine
+from sqlalchemy.orm import registry, sessionmaker
 
 mapper_registry = registry()
 
@@ -62,12 +62,25 @@ class Station:
             del dicts["_sa_instance_state"]
         return dicts
 
+    def dump_to_json(self):
+        return {
+            'id': self.id,
+            'full_empty_time': self.full_empty_time,
+            'max_capacity': self.max_capacity,
+            'bike_count': self.bike_count,
+            'priority': self.priority,
+            'diversity': self.diversity,
+            'velocity': self.velocity,
+            'latitude': self.latitude,
+            'longitude': self.longitude,
+            'demand': self.demand
+        }
 
 metadata = MetaData()
 
-# # 初始化数据库连接:
-# engine = create_engine('mysql+mysqldb://root:95930908@localhost:3306/bikeshare')
-# # 创建DBSession类型:
+# 初始化数据库连接:
+# engine = create_engine('mysql+mysqldb://root:95930908@localhost:3306/bikeshare_docked')
+# 创建DBSession类型:
 # DBSession = sessionmaker(bind=engine)
-#
+
 # Station.__table__.create(engine)
