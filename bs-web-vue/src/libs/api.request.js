@@ -4,3 +4,10 @@ const baseUrl = process.env.NODE_ENV === 'development' ? config.baseUrl.dev : co
 
 const axios = new HttpRequest(baseUrl)
 export default axios
+
+export const getTableData = () => {
+  return axios.request({
+    url: 'http://localhost:5000/station_info',
+    method: 'get'
+  })
+}

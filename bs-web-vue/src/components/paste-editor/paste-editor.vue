@@ -8,6 +8,7 @@ import CodeMirror from 'codemirror'
 import 'codemirror/lib/codemirror.css'
 import { forEach } from '@/libs/tools'
 import createPlaceholder from './plugins/placeholder'
+import { getTableData } from '@/api/data'
 export default {
   name: 'PasteEditor',
   props: {

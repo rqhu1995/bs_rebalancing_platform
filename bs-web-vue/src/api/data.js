@@ -1,8 +1,8 @@
 import axios from '@/libs/api.request'
 
-export const getTableData = () => {
+export const getTableData = sub_url => {
   return axios.request({
-    url: 'get_table_data',
+    url: 'http://localhost:5000/' + sub_url,
     method: 'get'
   })
 }
